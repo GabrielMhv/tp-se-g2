@@ -1,15 +1,4 @@
-/*
-  TP 2 - Système domotique connecté : commande de relais via Firebase
-  Carte   : ESP32 DevKit (Arduino IDE, carte "ESP32 Dev Module")
-  Librairie : "Firebase Arduino Client Library for ESP8266 and ESP32" (Mobizt)
 
-  Principe :
-   - L'interface Web écrit les ordres dans   /domotique/commandes/relayX  (true/false)
-   - L'ESP32 écoute ce nœud en temps réel (stream), pilote les relais,
-     puis confirme dans                      /domotique/etats/relayX      {etat, maj}
-   - Toutes les 10 s, l'ESP32 écrit un "heartbeat" dans /domotique/systeme
-   - Si la connexion est perdue trop longtemps : tous les relais passent à OFF (mode sécurité)
-*/
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -18,34 +7,32 @@
 #include "addons/TokenHelper.h"
 #include "addons/RTDBHelper.h"
 
-// ====================== 1. PARAMÈTRES À MODIFIER ======================
+
 #define WIFI_SSID      "NOM_DU_WIFI"
 #define WIFI_PASSWORD  "MOT_DE_PASSE_WIFI"
 
 #define API_KEY        "AIzaSyC92Kw3UoQbYhdBmvyw-wbegpLvjjC5pQE"
 #define DATABASE_URL   "https://tp2-se-default-rtdb.europe-west1.firebasedatabase.app/"
 
-// Compte créé dans Firebase > Authentication > Utilisateurs (email/mot de passe)
+// Compte Firebase Authentication : email/mot de passe
 #define USER_EMAIL     "esp32@exemple.com"
 #define USER_PASSWORD  "MOT_DE_PASSE_ESP32"
 
-// ====================== 2. MATÉRIEL ======================
-const uint8_t NB_RELAIS = 4;                       // 4 pour un module 4 canaux
-const uint8_t PIN_RELAIS[4] = {26, 27, 32, 33};    // GPIO sans contrainte au démarrage
-const char*   CLE_RELAIS[4] = {"relay1", "relay2", "relay3", "relay4"};
-const bool    RELAIS_ACTIF_BAS = true;             // la plupart des modules : IN à LOW = relais collé
+const uint8_t NB_RELAIS = 4;
+const uint8_t PIN_RELAIS[4] = {26, 27, 32, 33};
+const char* CLE_RELAIS[4] = {"relay1", "relay2", "relay3", "relay4"};
+const bool RELAIS_ACTIF_BAS = true; // IN à LOW pour la plupart des modules relais 3,3 V.
 
-// ====================== 3. COMPORTEMENT ======================
+
 const unsigned long DELAI_SECURITE_MS    = 30000;  // hors ligne > 30 s => tout éteindre
 const unsigned long PERIODE_HEARTBEAT_MS = 10000;
 const unsigned long PERIODE_RECO_WIFI_MS = 10000;
-// true  : après une coupure, on réapplique les dernières commandes de Firebase
-// false : après une coupure, on remet toutes les commandes à OFF (plus prudent)
+// true : restaure les commandes Firebase après une coupure ; false : remet tout à OFF.
 const bool RESTAURER_APRES_RECONNEXION = true;
 
-// ====================== 4. VARIABLES ======================
-FirebaseData   fbdoFlux;       // écoute des commandes (stream)
-FirebaseData   fbdoEcriture;   // lectures/écritures ponctuelles
+
+FirebaseData   fbdoFlux;
+FirebaseData   fbdoEcriture;
 FirebaseAuth   auth;
 FirebaseConfig config;
 
@@ -69,7 +56,7 @@ unsigned long dernierHeartbeat   = 0;
 unsigned long dernierEssaiWiFi   = 0;
 unsigned long nbReconnexions     = 0;
 
-// ====================== 5. OUTILS ======================
+
 bool reseauOK() {
   return WiFi.status() == WL_CONNECTED && Firebase.ready();
 }
@@ -97,7 +84,7 @@ void ecrireRelais(uint8_t i, bool actif) {
 void appliquerRelais(uint8_t i, bool actif) {
   ecrireRelais(i, actif);
   etatRelais[i]   = actif;
-  etatAPublier[i] = true;     // même si l'état n'a pas changé : l'interface attend une confirmation
+  etatAPublier[i] = true;
   Serial.printf("[RELAIS] %s -> %s\n", CLE_RELAIS[i], actif ? "ON" : "OFF");
 }
 
@@ -124,9 +111,7 @@ void publierHeartbeat() {
   }
 }
 
-// ====================== 6. STREAM FIREBASE ======================
-// Attention : ce callback s'exécute dans une autre tâche. On se contente de
-// mémoriser les ordres ; c'est loop() qui commande les relais.
+// Le callback mémorise les ordres ; loop() pilote les GPIO.
 void fluxCallback(FirebaseStream data) {
   String chemin = data.dataPath();   // "/" au premier envoi, puis "/relay1", ...
   String type   = data.dataType();   // "json" ou "boolean"
@@ -165,7 +150,7 @@ void demarrerFlux() {
   }
 }
 
-// ====================== 7. SÉCURITÉ ET RESYNCHRONISATION ======================
+
 void passerEnModeSecurite() {
   modeSecurite = true;
   Serial.println("[SECURITE] Connexion perdue trop longtemps : tous les relais passent à OFF");
@@ -200,12 +185,12 @@ void resynchroniser() {
   resyncNecessaire = false;
 }
 
-// ====================== 8. SETUP ======================
+
 void setup() {
   Serial.begin(115200);
   delay(200);
 
-  // Relais éteints dès le démarrage
+  // Coupe tous les relais au démarrage.
   for (uint8_t i = 0; i < NB_RELAIS; i++) {
     pinMode(PIN_RELAIS[i], OUTPUT);
     ecrireRelais(i, false);
@@ -242,11 +227,11 @@ void setup() {
   dernierContactOK = millis();
 }
 
-// ====================== 9. LOOP ======================
+
 void loop() {
   unsigned long maintenant = millis();
 
-  // A. Reconnexion Wi-Fi si besoin
+
   if (WiFi.status() != WL_CONNECTED && maintenant - dernierEssaiWiFi > PERIODE_RECO_WIFI_MS) {
     dernierEssaiWiFi = maintenant;
     Serial.println("[WIFI] Connexion perdue, nouvelle tentative...");
@@ -261,7 +246,7 @@ void loop() {
     Serial.println("[FIREBASE] Initialisation avec le Wi-Fi actif");
   }
 
-  // B. Suivi de la connectivité et mode sécurité
+
   bool connecte = reseauOK();
   if (connecte && !firebaseEtaitPret) {
     firebaseEtaitPret = true;
@@ -293,11 +278,11 @@ void loop() {
     }
   }
 
-  // C. Démarrage du flux et resynchronisation
+
   if (connecte && !fluxDemarre) demarrerFlux();
   if (connecte && resyncNecessaire) resynchroniser();
 
-  // D. Application des commandes reçues
+
   for (uint8_t i = 0; i < NB_RELAIS; i++) {
     if (commandeEnAttente[i]) {
       commandeEnAttente[i] = false;
@@ -305,14 +290,14 @@ void loop() {
     }
   }
 
-  // E. Confirmation des états vers Firebase (réessai tant que ça échoue)
+
   if (connecte) {
     for (uint8_t i = 0; i < NB_RELAIS; i++) {
       if (etatAPublier[i] && publierEtat(i)) etatAPublier[i] = false;
     }
   }
 
-  // F. Heartbeat
+
   if (connecte && (premierHeartbeat || maintenant - dernierHeartbeat >= PERIODE_HEARTBEAT_MS)) {
     premierHeartbeat = false;
     dernierHeartbeat = maintenant;

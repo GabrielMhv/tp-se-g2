@@ -1,8 +1,3 @@
-/**
- * Tableau de Commande Domotique — ESP32 + Firebase
- * Feuille de styles épurée, moderne et responsive
- */
-
 /* ==========================================================================
    1. VARIABLES & SYSTÈME DE DESIGN
    ========================================================================== */
@@ -919,9 +914,6 @@ body:has(.banniere-offline:not([hidden])) .page {
   border-bottom: none;
 }
 
-/* ==========================================================================
-   11. ÉCRAN DE CONNEXION
-   ========================================================================== */
 .connexion {
   display: grid;
   grid-template-columns: 1.1fr 1fr;

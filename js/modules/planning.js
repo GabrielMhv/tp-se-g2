@@ -1,8 +1,3 @@
-/**
- * Module de programmation horaire (Planning)
- * Projet domotique ESP32 + Firebase
- */
-
 import { ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const CHEMIN_PLANNING = "domotique/planning";
@@ -96,7 +91,7 @@ export function planningInit(db, getRelaisFn, actionnerRelaisFn) {
 
   let reglesEnCache = lirePlanningLocal();
 
-  // Remplir le select des relais
+
   function actualiserSelectRelais() {
     if (!selectRelais) return;
     const relais = getRelaisFn();
@@ -110,7 +105,7 @@ export function planningInit(db, getRelaisFn, actionnerRelaisFn) {
   }
   actualiserSelectRelais();
 
-  // Gestion de l'affichage du formulaire
+
   if (toggleBtn && formSection) {
     toggleBtn.addEventListener("click", () => {
       actualiserSelectRelais();
@@ -124,7 +119,7 @@ export function planningInit(db, getRelaisFn, actionnerRelaisFn) {
     });
   }
 
-  // Écoute des règles dans Firebase
+
   const planningRef = ref(db, CHEMIN_PLANNING);
   onValue(planningRef, (snapshot) => {
     const val = snapshot.val();
@@ -136,7 +131,7 @@ export function planningInit(db, getRelaisFn, actionnerRelaisFn) {
     planningRendreUI(reglesEnCache, getRelaisFn(), supprimerRegle);
   });
 
-  // Soumission du formulaire
+
   if (form) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -170,7 +165,7 @@ export function planningInit(db, getRelaisFn, actionnerRelaisFn) {
     });
   }
 
-  // Suppression
+
   async function supprimerRegle(id) {
     try {
       await remove(ref(db, `${CHEMIN_PLANNING}/${id}`));
@@ -181,7 +176,7 @@ export function planningInit(db, getRelaisFn, actionnerRelaisFn) {
     }
   }
 
-  // Vérificateur périodique pour déclencher les règles localement si le client est actif
+
   let dernierMinuteVerifiee = -1;
   setInterval(() => {
     const maintenant = new Date();

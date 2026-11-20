@@ -1,15 +1,10 @@
-/**
- * Module de déconnexion automatique après inactivité
- * Projet domotique ESP32 + Firebase
- */
 
-// Événements qui signalent une activité utilisateur
 const EVENEMENTS_ACTIVITE = ['mousemove', 'keydown', 'click', 'touchstart'];
 
-// Délai d'avertissement avant déconnexion (2 minutes)
+
 const DELAI_AVERTISSEMENT_MS = 2 * 60 * 1000;
 
-// Références internes (état du module)
+
 let _signOutFn = null;
 let _dureeMs = 30 * 60 * 1000;
 let _minuteurPrincipal = null;

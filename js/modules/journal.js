@@ -1,15 +1,10 @@
-/**
- * Module de journal d'activité avec persistance localStorage
- * Projet domotique ESP32 + Firebase
- */
 
-// Clé de stockage dans le localStorage
 const CLE_STOCKAGE = 'domotique_journal';
 
-// Nombre maximum d'entrées conservées
+
 const MAX_ENTREES = 50;
 
-// Sélecteur DOM du journal
+
 const SELECTEUR_JOURNAL = '#journal';
 
 /**

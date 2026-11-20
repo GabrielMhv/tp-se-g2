@@ -1,9 +1,4 @@
 /**
- * Module de notifications navigateur (Web Notifications API)
- * Projet domotique ESP32 + Firebase
- */
-
-/**
  * Demande la permission d'envoyer des notifications si elle n'a pas encore été accordée.
  * Ne fait rien si la permission est déjà accordée ou refusée.
  * @returns {Promise<NotificationPermission>}
@@ -30,7 +25,7 @@ export const notifier = (titre, corps, icone = '') => {
   if (!('Notification' in window)) return null;
   if (Notification.permission !== 'granted') return null;
 
-  // N'envoyer que si l'onglet est en arrière-plan
+
   if (!document.hidden) return null;
 
   const options = { body: corps };

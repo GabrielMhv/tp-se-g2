@@ -1,10 +1,3 @@
-/**
- * Logique applicative du tableau de bord domotique ESP32 + Firebase
- * Architecture séparée - Logique préservée à 100%
- * Version améliorée : 4 relais dynamiques, renommage, durée d'utilisation,
- * modules journal/notifications/inactivité, confirmation "Tout éteindre"
- */
-
 import { auth, db } from "./firebase-config.js";
 import {
   onAuthStateChanged,
@@ -17,7 +10,6 @@ import {
   set
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* ====== Imports des modules ====== */
 import { journalAjouter, journalCharger } from "./modules/journal.js";
 import {
   demanderPermissionNotif,
@@ -31,9 +23,8 @@ import {
 } from "./modules/inactivite.js";
 import { planningInit } from "./modules/planning.js";
 
-/* ====== 1. Paramètres des équipements ====== */
 
-/** Définition par défaut des 4 relais */
+
 const RELAIS_DEFAUT = [
   { id: "relay1", nom: "Lampe du salon" },
   { id: "relay2", nom: "Lampe de la chambre" },
@@ -41,7 +32,7 @@ const RELAIS_DEFAUT = [
   { id: "relay4", nom: "Éclairage extérieur" }
 ];
 
-/** Liste active des relais (sera filtrée selon nb_relais Firebase) */
+
 let RELAIS = [...RELAIS_DEFAUT];
 
 const DELAI_HORS_LIGNE_S = 25;      // Pas de heartbeat depuis 25 s => ESP32 hors ligne
@@ -49,7 +40,6 @@ const DELAI_CONFIRMATION_MS = 6000; // Pas de confirmation après 6 s => alerte
 
 const $ = (selector) => document.querySelector(selector);
 
-/* ====== 2. État interne ====== */
 let commandes = {};
 let etats = {};
 let systeme = {};
@@ -58,13 +48,12 @@ let abonnements = [];
 let premierEtat = true;
 let minuteur = null;
 
-/** Mémorise si l'ESP32 était en ligne au dernier tick (pour détection changement d'état) */
+
 let espEtaitEnLigne = null;
 
-/** Timestamps d'allumage par relayId (ms) — null si éteint */
+
 const tempsAllumage = {};
 
-/* ====== 3. Renommage des équipements ====== */
 
 /**
  * Charge les noms personnalisés depuis localStorage et les applique à RELAIS.
@@ -147,7 +136,6 @@ function attacherRenommage(li, r) {
   });
 }
 
-/* ====== 4. Initialisation de la liste des relais ====== */
 const liste = $("#liste");
 
 function initialiserListe() {
@@ -195,7 +183,6 @@ function initialiserListe() {
   });
 }
 
-/* ====== 5. Chargement du nombre de relais depuis Firebase ====== */
 
 /**
  * Lit /domotique/config/nb_relais depuis Firebase et filtre RELAIS en conséquence.
@@ -224,7 +211,6 @@ function chargerConfigRelais() {
   });
 }
 
-/* ====== 6. Envoi des commandes ====== */
 async function envoyer(r, valeur) {
   envoyeA[r.id] = Date.now();
   try {
@@ -236,9 +222,8 @@ async function envoyer(r, valeur) {
   majUI();
 }
 
-/* ====== 7. Bouton "Tout éteindre" avec confirmation ====== */
 $("#tout-eteindre")?.addEventListener("click", () => {
-  // Vérifier si au moins un relais est ON
+
   const unAllume = RELAIS.some((r) => etats[r.id] && etats[r.id].etat === true);
   if (unAllume) {
     if (!window.confirm("Voulez-vous vraiment éteindre tous les équipements ?")) return;
@@ -246,7 +231,6 @@ $("#tout-eteindre")?.addEventListener("click", () => {
   RELAIS.forEach((r) => envoyer(r, false));
 });
 
-/* ====== 8. Utilitaires d'affichage ====== */
 function heure(ts) {
   return new Date(ts).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
@@ -274,11 +258,10 @@ function formaterDuree(ms) {
   return `${minutes} min`;
 }
 
-/* ====== 9. Mise à jour de l'interface utilisateur ====== */
 function majUI() {
   const enLigne = esp32EnLigne();
 
-  // Détection changement d'état ESP32 pour notifications
+
   if (espEtaitEnLigne !== null && espEtaitEnLigne !== enLigne) {
     if (!enLigne) {
       notifESP32HorsLigne();
@@ -340,7 +323,7 @@ function majUI() {
     espSecuriteEl.hidden = !(enLigne && systeme.mode_securite === true);
   }
 
-  // Mise à jour de chaque carte relais
+
   RELAIS.forEach((r) => {
     const li = liste?.querySelector(`[data-id="${r.id}"]`);
     if (!li) return;
@@ -365,7 +348,7 @@ function majUI() {
       if (synchro) {
         const maj = etats[r.id].maj ? ` • confirmé à ${heure(etats[r.id].maj * 1000)}` : "";
 
-        // Ajout de la durée d'utilisation si allumé
+
         let suffixeDuree = "";
         if (etat && tempsAllumage[r.id]) {
           const dureeMs = Date.now() - tempsAllumage[r.id];
@@ -394,16 +377,15 @@ function majUI() {
   });
 }
 
-/* ====== 10. Abonnements Firebase ====== */
 const refus = (e) => journalAjouter("Lecture refusée (" + (e.code || e.message) + ")");
 
 function ecouter() {
   premierEtat = true;
 
-  // Restaurer le journal depuis localStorage
+
   journalCharger();
 
-  // Démarrer la surveillance d'inactivité (déconnexion auto)
+
   demarrerSurveillanceInactivite(() => signOut(auth));
 
   abonnements.push(
@@ -461,11 +443,10 @@ function arreter() {
   systeme = {};
   envoyeA = {};
 
-  // Arrêter la surveillance d'inactivité
+
   arreterSurveillanceInactivite();
 }
 
-/* ====== 11. Authentification ====== */
 const MESSAGES_AUTH = {
   "auth/invalid-credential": "Adresse e-mail ou mot de passe incorrect.",
   "auth/invalid-email": "Adresse e-mail invalide.",
@@ -516,20 +497,19 @@ onAuthStateChanged(auth, (utilisateur) => {
   }
 
   if (utilisateur) {
-    // Demander la permission de notifications navigateur
+
     demanderPermissionNotif();
-    // Charger la configuration des relais (nombre + noms) puis écouter Firebase
+
     chargerConfigRelais();
     ecouter();
     majUI();
-    // Initialiser le module de planning horaire
+
     planningInit(db, () => RELAIS, envoyer);
   } else {
     arreter();
   }
 });
 
-/* ====== 12. Surveillance réseau (Online / Offline) ====== */
 const banniereOffline = $("#banniere-offline");
 window.addEventListener("offline", () => {
   if (banniereOffline) banniereOffline.hidden = false;
