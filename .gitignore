@@ -1,0 +1,17 @@
+# Dépendances
+node_modules/
+
+# Informations et identifiants sensibles
+secrets.h
+esp32_domotique_firebase/secrets.h
+
+# Environnement et système
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/launch.json
+
+# Couverture de test
+coverage/
+dist/

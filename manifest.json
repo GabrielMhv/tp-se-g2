@@ -1,0 +1,27 @@
+{
+  "name": "Tableau de commande domotique",
+  "short_name": "Domotique",
+  "description": "Supervision et contrôle de relais ESP32 via Firebase Realtime Database",
+  "start_url": "./interface_web_domotique.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f0f4f8",
+  "theme_color": "#3b6fe0",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Tableau de bord",
+      "url": "./interface_web_domotique.html",
+      "description": "Ouvrir le tableau de commande"
+    }
+  ]
+}

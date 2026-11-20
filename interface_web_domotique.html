@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#3b6fe0">
+  <meta name="description" content="Tableau de commande domotique ESP32 et Firebase Realtime Database">
+  <title>Tableau de commande domotique — ESP32 & Firebase</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Bannières d'alerte -->
+  <div id="banniere-inactivite" class="banniere-inactivite" hidden>
+    <span>⏱ Déconnexion automatique imminente pour cause d'inactivité.</span>
+    <button class="bouton bouton-sm" data-action="rester">Rester connecté</button>
+  </div>
+
+  <div id="banniere-offline" class="banniere-offline" hidden>
+    <span>📡 Pas de connexion Internet — les commandes seront synchronisées dès le rétablissement.</span>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       ÉCRAN DE CONNEXION
+  ══════════════════════════════════════════ -->
+  <main class="connexion" id="ecran-connexion" hidden>
+
+    <div class="connexion-pitch">
+      <div class="marque">Maison connectée</div>
+      <h1>Le contrôle de votre maison, en temps réel.</h1>
+      <p>Supervisez l'ESP32, pilotez vos éclairages et suivez l'état de chaque relais depuis un tableau de bord réactif et précis.</p>
+      <div class="connexion-signal">Connexion Firebase chiffrée</div>
+    </div>
+
+    <form class="formulaire" id="form-connexion" novalidate>
+      <h2>Se connecter</h2>
+      <p class="intro">Accédez à votre console de gestion domotique.</p>
+
+      <div class="champ-groupe">
+        <label for="email">Adresse e-mail</label>
+        <input id="email" type="email" autocomplete="username" placeholder="esp32@exemple.com" required>
+      </div>
+
+      <div class="champ-groupe">
+        <label for="mdp">Mot de passe</label>
+        <input id="mdp" type="password" autocomplete="current-password" placeholder="••••••••" required>
+      </div>
+
+      <p class="erreur" id="erreur" role="alert"></p>
+      <button class="bouton plein" type="submit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        Se connecter
+      </button>
+    </form>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════
+       TABLEAU DE BORD PRINCIPAL
+  ══════════════════════════════════════════ -->
+  <div class="page" id="ecran-app" hidden>
+
+    <!-- En-tête -->
+    <header class="entete">
+      <div>
+        <div class="marque">Système domotique — ESP32</div>
+        <h1>Tableau de commande</h1>
+        <p class="sous-titre">Pilotez vos équipements et vérifiez leurs états confirmés en direct.</p>
+      </div>
+
+      <!-- Badge de statut ESP32 -->
+      <div class="esp" id="esp">
+        <span class="pastille" aria-hidden="true"></span>
+        <div>
+          <div class="titre" id="esp-titre">ESP32 hors ligne</div>
+          <div class="detail" id="esp-detail">Recherche du signal…</div>
+          <div class="securite" id="esp-securite" hidden>
+            ⚠ Mode sécurité actif — relais coupés
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Métriques KPI -->
+    <section class="resume" aria-label="Indicateurs système">
+
+      <div class="indicateur">
+        <div class="etiquette-wrapper">
+          <span class="etiquette">Équipements actifs</span>
+          <svg class="indicateur-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </div>
+        <strong id="nb-allumes">0 / 2</strong>
+      </div>
+
+      <div class="indicateur">
+        <div class="etiquette-wrapper">
+          <span class="etiquette">Relais supervisés</span>
+          <svg class="indicateur-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/>
+            <line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
+          </svg>
+        </div>
+        <strong id="nb-relais">2</strong>
+      </div>
+
+      <div class="indicateur">
+        <div class="etiquette-wrapper">
+          <span class="etiquette">Dernier signal</span>
+          <svg class="indicateur-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <strong id="dernier-signal">En attente</strong>
+      </div>
+
+      <div class="indicateur">
+        <div class="etiquette-wrapper">
+          <span class="etiquette">Signal Wi-Fi</span>
+          <svg class="indicateur-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+            <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+            <line x1="12" y1="20" x2="12.01" y2="20"/>
+          </svg>
+        </div>
+        <strong id="rssi">-- dBm</strong>
+      </div>
+
+    </section>
+
+    <!-- Section équipements -->
+    <div class="section-tete">
+      <div>
+        <h2>Équipements</h2>
+        <p>Double-cliquez sur le nom d'un équipement pour le renommer. Les états sont confirmés par l'ESP32.</p>
+      </div>
+    </div>
+
+    <!-- Cartes relais (générées dynamiquement par app.js) -->
+    <ul class="liste" id="liste"></ul>
+
+    <!-- Actions globales -->
+    <div class="actions">
+      <div class="actions-principales">
+        <button class="bouton plein" id="tout-eteindre">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+            <line x1="12" y1="2" x2="12" y2="12"/>
+          </svg>
+          Tout éteindre
+        </button>
+      </div>
+      <button class="bouton danger" id="deconnexion">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Se déconnecter
+      </button>
+    </div>
+
+    <!-- Section Planning Horaire -->
+    <section class="planning-bloc" id="planning-section">
+      <div class="section-tete">
+        <div>
+          <h2>Planning horaire</h2>
+          <p>Programmez des actions automatiques pour vos équipements.</p>
+        </div>
+        <button class="bouton" id="toggle-planning" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Ajouter une règle
+        </button>
+      </div>
+
+      <div id="planning-form" class="planning-form" hidden>
+        <form id="form-planning">
+          <div class="planning-champs">
+            <div class="champ-groupe-sm">
+              <label for="plan-relais">Équipement</label>
+              <select id="plan-relais" class="select-champ"></select>
+            </div>
+            <div class="champ-groupe-sm">
+              <label for="plan-action">Action</label>
+              <select id="plan-action" class="select-champ">
+                <option value="true">Allumer</option>
+                <option value="false">Éteindre</option>
+              </select>
+            </div>
+            <div class="champ-groupe-sm">
+              <label for="plan-heure">Heure</label>
+              <input id="plan-heure" type="time" class="input-champ" required>
+            </div>
+          </div>
+          <div class="planning-jours">
+            <span class="label-sm">Jours actifs</span>
+            <div class="jours-cases">
+              <label class="jour-case"><input type="checkbox" value="1" checked><span>L</span></label>
+              <label class="jour-case"><input type="checkbox" value="2" checked><span>M</span></label>
+              <label class="jour-case"><input type="checkbox" value="3" checked><span>Me</span></label>
+              <label class="jour-case"><input type="checkbox" value="4" checked><span>J</span></label>
+              <label class="jour-case"><input type="checkbox" value="5" checked><span>V</span></label>
+              <label class="jour-case"><input type="checkbox" value="6" checked><span>S</span></label>
+              <label class="jour-case"><input type="checkbox" value="0" checked><span>D</span></label>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button type="submit" class="bouton plein">Enregistrer la règle</button>
+            <button type="button" class="bouton" id="annuler-planning">Annuler</button>
+          </div>
+        </form>
+      </div>
+
+      <ul class="planning-liste" id="planning-liste">
+        <li class="vide-planning"><span>Aucune règle programmée pour le moment.</span></li>
+      </ul>
+    </section>
+
+    <!-- Journal d'activité -->
+    <section class="journal-bloc">
+      <div class="section-tete">
+        <div>
+          <h2>Activité récente</h2>
+          <p>Historique persistant des ordres et des accusés de réception ESP32.</p>
+        </div>
+      </div>
+      <div class="journal-conteneur">
+        <ul class="journal" id="journal">
+          <li class="vide"><span>Aucun événement pour l'instant.</span></li>
+        </ul>
+      </div>
+    </section>
+
+  </div><!-- /.page -->
+
+  <!-- Script applicatif modulaire -->
+  <script type="module" src="js/app.js"></script>
+
+  <!-- Enregistrement Service Worker PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

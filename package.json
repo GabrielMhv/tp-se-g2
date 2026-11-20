@@ -1,0 +1,12 @@
+{
+  "name": "tp2-se-domotique",
+  "version": "1.0.0",
+  "description": "Tableau de commande domotique ESP32 + Firebase Realtime Database",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/app.test.js"
+  },
+  "keywords": ["iot", "esp32", "firebase", "home-automation"],
+  "author": "",
+  "license": "ISC"
+}
