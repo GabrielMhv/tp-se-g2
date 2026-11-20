@@ -19,15 +19,15 @@
 #include "addons/RTDBHelper.h"
 
 // ====================== 1. PARAMÈTRES À MODIFIER ======================
-#define WIFI_SSID      "A16 de Gabriel"
-#define WIFI_PASSWORD  "cp78v9t7k84s77c"
+#define WIFI_SSID      "NOM_DU_WIFI"
+#define WIFI_PASSWORD  "MOT_DE_PASSE_WIFI"
 
 #define API_KEY        "AIzaSyC92Kw3UoQbYhdBmvyw-wbegpLvjjC5pQE"
 #define DATABASE_URL   "https://tp2-se-default-rtdb.europe-west1.firebasedatabase.app/"
 
 // Compte créé dans Firebase > Authentication > Utilisateurs (email/mot de passe)
 #define USER_EMAIL     "esp32@exemple.com"
-#define USER_PASSWORD  "password"
+#define USER_PASSWORD  "MOT_DE_PASSE_ESP32"
 
 // ====================== 2. MATÉRIEL ======================
 const uint8_t NB_RELAIS = 4;                       // 4 pour un module 4 canaux
